@@ -1,0 +1,1367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>AI Business Builder — Connected to Telegram</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Fira+Code:wght@400;500;600&family=Manrope:wght@300;400;500;600;700;800&display=swap');
+
+:root {
+  --bg: #07080e;
+  --s1: #0d0e18;
+  --s2: #121320;
+  --s3: #181928;
+  --s4: #1f2133;
+  --border: #222438;
+  --b2: #2d3052;
+  --b3: #3d4270;
+  --g: #00ffb3;
+  --g2: rgba(0,255,179,0.12);
+  --g3: rgba(0,255,179,0.06);
+  --b: #00aaff;
+  --b2c: rgba(0,170,255,0.12);
+  --y: #ffcc00;
+  --r: #ff4466;
+  --p: #aa66ff;
+  --o: #ff8833;
+  --text: #dde0f5;
+  --m: #555878;
+  --m2: #8890b5;
+  --rad: 14px;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+html, body { height:100%; font-family:'Manrope',sans-serif; background:var(--bg); color:var(--text); overflow:hidden; }
+
+/* noise overlay */
+body::after {
+  content:''; position:fixed; inset:0; pointer-events:none; z-index:0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+  opacity: 0.4;
+}
+
+.app { display:flex; flex-direction:column; height:100vh; position:relative; z-index:1; }
+
+/* ── HEADER ── */
+.hdr {
+  background:var(--s1);
+  border-bottom:1px solid var(--border);
+  padding:10px 14px;
+  display:flex; align-items:center; justify-content:space-between;
+  flex-shrink:0;
+}
+
+.hdr-left { display:flex; align-items:center; gap:10px; }
+
+.logo-mark {
+  width:36px; height:36px;
+  background:linear-gradient(135deg,var(--g),var(--b));
+  border-radius:10px;
+  display:flex; align-items:center; justify-content:center;
+  font-size:18px; flex-shrink:0;
+}
+
+.logo-txt {
+  font-family:'Bebas Neue',cursive;
+  font-size:20px; letter-spacing:1px; line-height:1;
+  color:var(--text);
+}
+
+.logo-txt small {
+  display:block;
+  font-family:'Manrope',sans-serif;
+  font-size:9px; letter-spacing:2px;
+  color:var(--m2); font-weight:600;
+  text-transform:uppercase;
+}
+
+/* Connection status pill */
+.conn-pill {
+  display:flex; align-items:center; gap:5px;
+  background:var(--s3);
+  border:1px solid var(--border);
+  border-radius:20px;
+  padding:5px 10px;
+  font-size:11px; font-weight:700;
+  cursor:pointer;
+  transition:all 0.2s;
+}
+
+.conn-dot {
+  width:7px; height:7px; border-radius:50%;
+  background:var(--m); flex-shrink:0;
+}
+
+.conn-pill.connected .conn-dot { background:var(--g); box-shadow:0 0 6px var(--g); }
+.conn-pill.connected { border-color:rgba(0,255,179,0.3); color:var(--g); }
+.conn-pill.error .conn-dot { background:var(--r); }
+.conn-pill.error { border-color:rgba(255,68,102,0.3); color:var(--r); }
+
+/* ── CONFIG DRAWER ── */
+.cfg-overlay {
+  display:none; position:fixed; inset:0;
+  background:rgba(0,0,0,0.7); z-index:200;
+  backdrop-filter:blur(6px);
+}
+.cfg-overlay.open { display:block; }
+
+.cfg-drawer {
+  position:fixed; bottom:0; left:0; right:0;
+  background:var(--s1);
+  border-top:1px solid var(--b2);
+  border-radius:20px 20px 0 0;
+  padding:20px 16px 36px;
+  z-index:201;
+  transform:translateY(100%);
+  transition:transform 0.35s cubic-bezier(0.4,0,0.2,1);
+  max-height:90vh;
+  overflow-y:auto;
+}
+
+.cfg-drawer.open { transform:translateY(0); }
+
+.cfg-handle {
+  width:36px; height:4px; background:var(--b2);
+  border-radius:2px; margin:0 auto 20px;
+}
+
+.cfg-title {
+  font-family:'Bebas Neue',cursive;
+  font-size:22px; letter-spacing:1px; margin-bottom:18px;
+  color:var(--text);
+}
+
+.cfg-section { margin-bottom:20px; }
+
+.cfg-label {
+  font-size:10px; font-weight:800;
+  text-transform:uppercase; letter-spacing:2px;
+  color:var(--m2); margin-bottom:8px; display:block;
+}
+
+.cfg-input {
+  width:100%;
+  background:var(--s3);
+  border:1px solid var(--b2);
+  border-radius:10px;
+  padding:11px 14px;
+  color:var(--text);
+  font-family:'Fira Code',monospace;
+  font-size:12px;
+  outline:none;
+  transition:border-color 0.2s;
+}
+
+.cfg-input:focus { border-color:var(--g); }
+.cfg-input::placeholder { color:var(--m); }
+
+.cfg-hint {
+  font-size:11px; color:var(--m2);
+  margin-top:6px; line-height:1.5;
+}
+
+.cfg-hint a { color:var(--b); text-decoration:none; }
+
+.ai-pills { display:flex; flex-wrap:wrap; gap:7px; }
+
+.ai-pill {
+  background:var(--s3);
+  border:1px solid var(--border);
+  border-radius:8px;
+  padding:6px 12px;
+  font-size:12px; font-weight:600;
+  cursor:pointer;
+  transition:all 0.2s;
+  color:var(--m2);
+}
+
+.ai-pill.active { border-color:var(--g); color:var(--g); background:var(--g2); }
+
+.cfg-save {
+  width:100%;
+  background:linear-gradient(135deg,var(--g),#00d490);
+  color:var(--bg); border:none;
+  border-radius:12px; padding:14px;
+  font-family:'Manrope',sans-serif;
+  font-size:15px; font-weight:800;
+  cursor:pointer; transition:all 0.2s;
+  margin-top:8px;
+}
+
+.cfg-save:hover { transform:translateY(-2px); box-shadow:0 8px 24px rgba(0,255,179,0.3); }
+
+/* ── TABS ── */
+.tabs {
+  display:flex;
+  background:var(--s1);
+  border-bottom:1px solid var(--border);
+  flex-shrink:0;
+}
+
+.tab {
+  flex:1; padding:11px 8px;
+  text-align:center;
+  font-size:11px; font-weight:700;
+  color:var(--m);
+  cursor:pointer;
+  border-bottom:2px solid transparent;
+  transition:all 0.2s;
+  display:flex; align-items:center; justify-content:center; gap:5px;
+  text-transform:uppercase; letter-spacing:0.5px;
+}
+
+.tab.active { color:var(--g); border-bottom-color:var(--g); }
+
+.tab .badge {
+  background:var(--r);
+  color:white;
+  width:16px; height:16px;
+  border-radius:50%;
+  font-size:9px;
+  display:flex; align-items:center; justify-content:center;
+}
+
+/* ── PAGES ── */
+.page { display:none; flex:1; flex-direction:column; overflow:hidden; }
+.page.active { display:flex; }
+
+/* ── BUILDER PAGE ── */
+/* Input zone */
+.input-zone {
+  padding:12px 14px;
+  border-bottom:1px solid var(--border);
+  background:var(--s1);
+  flex-shrink:0;
+}
+
+.iz-top {
+  display:flex; align-items:center; gap:8px; margin-bottom:8px;
+}
+
+.iz-label {
+  font-size:10px; font-weight:800;
+  text-transform:uppercase; letter-spacing:2px;
+  color:var(--m2); flex:1;
+}
+
+.ai-indicator {
+  font-size:10px; font-weight:700;
+  color:var(--g); background:var(--g3);
+  border:1px solid rgba(0,255,179,0.2);
+  border-radius:6px; padding:3px 8px;
+  cursor:pointer;
+}
+
+.input-row { display:flex; gap:8px; align-items:flex-end; }
+
+.idea-box {
+  flex:1;
+  background:var(--s2);
+  border:1px solid var(--b2);
+  border-radius:12px;
+  padding:11px 13px;
+  color:var(--text);
+  font-family:'Manrope',sans-serif;
+  font-size:14px; line-height:1.5;
+  outline:none; resize:none;
+  min-height:48px; max-height:110px;
+  overflow-y:auto;
+  transition:border-color 0.2s;
+}
+
+.idea-box:focus { border-color:var(--g); }
+.idea-box::placeholder { color:var(--m); }
+
+.send-btn {
+  width:48px; height:48px;
+  background:linear-gradient(135deg,var(--g),#00d490);
+  border:none; border-radius:12px;
+  color:var(--bg); font-size:22px;
+  cursor:pointer; display:flex;
+  align-items:center; justify-content:center;
+  flex-shrink:0; transition:all 0.2s;
+  font-weight:700;
+}
+
+.send-btn:hover { transform:scale(1.05); }
+.send-btn:disabled { opacity:0.4; cursor:not-allowed; transform:none; }
+
+@keyframes spin { to { transform:rotate(360deg); } }
+.sending { animation:spin 0.8s linear infinite; display:inline-block; }
+
+/* Quick chips */
+.chips-row {
+  padding:8px 14px;
+  border-bottom:1px solid var(--border);
+  flex-shrink:0;
+}
+
+.chips-label { font-size:9px; font-weight:800; text-transform:uppercase; letter-spacing:2px; color:var(--m); margin-bottom:7px; }
+
+.chips {
+  display:flex; gap:6px;
+  overflow-x:auto; scrollbar-width:none;
+  padding-bottom:2px;
+}
+.chips::-webkit-scrollbar { display:none; }
+
+.chip {
+  background:var(--s3); border:1px solid var(--border);
+  border-radius:16px; padding:5px 11px;
+  font-size:11px; font-weight:600; color:var(--m2);
+  cursor:pointer; white-space:nowrap;
+  transition:all 0.2s; flex-shrink:0;
+}
+
+.chip:hover { border-color:var(--b); color:var(--b); background:var(--b2c); }
+
+/* Output area */
+.output { flex:1; overflow-y:auto; padding:14px; display:flex; flex-direction:column; gap:12px; }
+
+/* Empty state */
+.empty {
+  flex:1; display:flex; flex-direction:column;
+  align-items:center; justify-content:center;
+  text-align:center; padding:32px 20px;
+}
+
+.empty-icon { font-size:52px; margin-bottom:14px; animation:float 3s ease-in-out infinite; }
+@keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
+
+.empty-title { font-family:'Bebas Neue',cursive; font-size:26px; letter-spacing:1px; margin-bottom:8px; }
+.empty-title span { color:var(--g); }
+.empty-sub { font-size:13px; color:var(--m2); line-height:1.7; max-width:260px; }
+
+/* Messages */
+@keyframes slideUp { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+.msg { animation:slideUp 0.25s ease; }
+
+.msg-user { display:flex; justify-content:flex-end; }
+.msg-user .bub {
+  background:linear-gradient(135deg,rgba(0,255,179,0.12),rgba(0,170,255,0.08));
+  border:1px solid rgba(0,255,179,0.18);
+  border-radius:14px 14px 3px 14px;
+  padding:10px 13px; max-width:84%;
+  font-size:14px; line-height:1.5;
+}
+
+.msg-ai { display:flex; flex-direction:column; gap:8px; }
+
+.ai-tag {
+  display:flex; align-items:center; gap:7px;
+  font-size:10px; font-weight:800;
+  text-transform:uppercase; letter-spacing:2px;
+  color:var(--g);
+}
+
+.ai-dot { width:7px; height:7px; border-radius:50%; background:var(--g); box-shadow:0 0 6px var(--g); }
+
+/* Result cards */
+.r-card {
+  background:var(--s2); border:1px solid var(--border);
+  border-radius:var(--rad); overflow:hidden;
+}
+
+.r-card-head {
+  background:var(--s3); border-bottom:1px solid var(--border);
+  padding:8px 12px; display:flex;
+  align-items:center; justify-content:space-between;
+  font-size:10px; font-weight:800;
+  text-transform:uppercase; letter-spacing:1.5px;
+}
+
+.r-card-body { padding:11px 13px; font-size:13px; line-height:1.7; }
+.r-card-body strong { color:var(--g); font-weight:700; }
+.r-card-body em { color:var(--b); font-style:normal; font-weight:600; }
+
+/* Code block */
+.code-wrap { background:#080910; border:1px solid var(--b2); border-radius:var(--rad); overflow:hidden; }
+
+.code-head {
+  background:var(--s3); border-bottom:1px solid var(--border);
+  padding:7px 12px; display:flex;
+  align-items:center; justify-content:space-between;
+}
+
+.code-lang { font-family:'Fira Code',monospace; font-size:10px; color:var(--b); font-weight:600; }
+
+.code-acts { display:flex; gap:6px; }
+
+.cbtn {
+  background:var(--s4); border:1px solid var(--border);
+  border-radius:6px; padding:3px 9px;
+  font-size:10px; color:var(--m2);
+  cursor:pointer; transition:all 0.2s;
+  font-family:'Manrope',sans-serif; font-weight:600;
+}
+
+.cbtn:hover { border-color:var(--g); color:var(--g); }
+.cbtn.copied { border-color:var(--g); color:var(--g); }
+.cbtn.sending-tg { border-color:var(--b); color:var(--b); }
+.cbtn.sent-tg { border-color:var(--g); color:var(--g); background:var(--g2); }
+
+.code-body {
+  padding:12px; overflow-x:auto; max-height:280px; overflow-y:auto;
+  font-family:'Fira Code',monospace; font-size:12px;
+  line-height:1.75; color:#c8d3f5;
+}
+
+/* ── SEND TO TELEGRAM BANNER ── */
+.tg-banner {
+  background:linear-gradient(135deg,rgba(0,170,255,0.1),rgba(0,255,179,0.07));
+  border:1px solid rgba(0,170,255,0.25);
+  border-radius:var(--rad);
+  padding:13px;
+  display:flex; align-items:center;
+  justify-content:space-between; gap:10px;
+}
+
+.tg-banner-left {}
+.tg-banner-title { font-size:13px; font-weight:800; margin-bottom:3px; }
+.tg-banner-sub { font-size:11px; color:var(--m2); }
+
+.tg-send-btn {
+  background:linear-gradient(135deg,#0088cc,#00aaff);
+  color:white; border:none;
+  border-radius:10px; padding:9px 14px;
+  font-family:'Manrope',sans-serif;
+  font-size:12px; font-weight:800;
+  cursor:pointer; white-space:nowrap;
+  display:flex; align-items:center; gap:6px;
+  transition:all 0.2s; flex-shrink:0;
+}
+
+.tg-send-btn:hover { transform:translateY(-1px); box-shadow:0 6px 20px rgba(0,170,255,0.3); }
+.tg-send-btn:disabled { opacity:0.5; transform:none; cursor:not-allowed; }
+.tg-send-btn.done { background:linear-gradient(135deg,var(--g),#00d490); color:var(--bg); }
+
+/* ── LIBRARY PAGE ── */
+.lib-toolbar {
+  padding:10px 14px;
+  border-bottom:1px solid var(--border);
+  background:var(--s1);
+  display:flex; gap:8px; flex-shrink:0;
+}
+
+.lib-search {
+  flex:1; background:var(--s2);
+  border:1px solid var(--b2);
+  border-radius:10px; padding:9px 12px;
+  color:var(--text); font-size:13px;
+  outline:none;
+}
+
+.lib-search::placeholder { color:var(--m); }
+.lib-search:focus { border-color:var(--b); }
+
+.lib-list { flex:1; overflow-y:auto; padding:12px 14px; display:flex; flex-direction:column; gap:8px; }
+
+.lib-card {
+  background:var(--s2); border:1px solid var(--border);
+  border-radius:var(--rad); padding:13px;
+  transition:all 0.2s;
+}
+
+.lib-card:hover { border-color:var(--b2); }
+
+.lc-top { display:flex; align-items:flex-start; justify-content:space-between; gap:8px; margin-bottom:6px; }
+.lc-name { font-size:13px; font-weight:700; line-height:1.3; flex:1; }
+
+.lc-badge {
+  font-size:9px; font-weight:800;
+  padding:3px 7px; border-radius:5px;
+  flex-shrink:0; text-transform:uppercase; letter-spacing:0.5px;
+}
+
+.badge-synced { background:rgba(0,255,179,0.12); color:var(--g); border:1px solid rgba(0,255,179,0.25); }
+.badge-local { background:rgba(255,204,0,0.12); color:var(--y); border:1px solid rgba(255,204,0,0.25); }
+
+.lc-meta { font-size:11px; color:var(--m2); margin-bottom:8px; }
+
+.lc-actions { display:flex; gap:6px; }
+
+.la-btn {
+  flex:1; background:var(--s3); border:1px solid var(--border);
+  border-radius:8px; padding:6px 8px;
+  font-size:11px; color:var(--m2);
+  cursor:pointer; text-align:center;
+  transition:all 0.2s; font-weight:600;
+}
+
+.la-btn:hover { border-color:var(--g); color:var(--g); }
+.la-btn.tg { border-color:rgba(0,170,255,0.3); color:var(--b); background:rgba(0,170,255,0.06); }
+.la-btn.tg:hover { border-color:var(--b); background:rgba(0,170,255,0.12); }
+.la-btn.del:hover { border-color:var(--r); color:var(--r); }
+
+/* ── TELEGRAM CONTROL PAGE ── */
+.tg-page { flex:1; overflow-y:auto; padding:14px; display:flex; flex-direction:column; gap:12px; }
+
+.tg-status-card {
+  background:var(--s2); border:1px solid var(--border);
+  border-radius:var(--rad); padding:16px; text-align:center;
+}
+
+.tg-sc-icon { font-size:44px; margin-bottom:10px; }
+.tg-sc-title { font-family:'Bebas Neue',cursive; font-size:20px; letter-spacing:1px; margin-bottom:6px; }
+.tg-sc-sub { font-size:12px; color:var(--m2); line-height:1.6; }
+
+.cmd-card {
+  background:var(--s2); border:1px solid var(--border);
+  border-radius:var(--rad); overflow:hidden;
+}
+
+.cmd-card-title {
+  background:var(--s3); border-bottom:1px solid var(--border);
+  padding:9px 13px; font-size:11px; font-weight:800;
+  text-transform:uppercase; letter-spacing:1.5px; color:var(--m2);
+}
+
+.cmd-row {
+  display:flex; align-items:center; gap:10px;
+  padding:9px 13px; border-bottom:1px solid var(--border);
+  cursor:pointer; transition:background 0.15s;
+}
+
+.cmd-row:last-child { border-bottom:none; }
+.cmd-row:hover { background:var(--s3); }
+
+.cmd-name {
+  font-family:'Fira Code',monospace;
+  font-size:12px; color:var(--g); font-weight:600;
+  min-width:90px; flex-shrink:0;
+}
+
+.cmd-desc { font-size:12px; color:var(--m2); flex:1; }
+
+.cmd-arrow { color:var(--m); font-size:14px; }
+
+/* Quick send box */
+.quick-send {
+  background:var(--s2); border:1px solid var(--border);
+  border-radius:var(--rad); padding:14px;
+  display:flex; flex-direction:column; gap:10px;
+}
+
+.qs-label { font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:2px; color:var(--m2); }
+
+.qs-input {
+  background:var(--s3); border:1px solid var(--b2);
+  border-radius:10px; padding:10px 12px;
+  color:var(--text); font-size:13px; outline:none;
+  font-family:'Manrope',sans-serif;
+}
+
+.qs-input:focus { border-color:var(--g); }
+.qs-input::placeholder { color:var(--m); }
+
+.qs-send {
+  background:linear-gradient(135deg,#0088cc,#00aaff);
+  color:white; border:none;
+  border-radius:10px; padding:11px;
+  font-family:'Manrope',sans-serif;
+  font-size:13px; font-weight:800;
+  cursor:pointer; display:flex;
+  align-items:center; justify-content:center; gap:6px;
+  transition:all 0.2s;
+}
+
+.qs-send:hover { transform:translateY(-1px); box-shadow:0 6px 20px rgba(0,170,255,0.3); }
+
+/* ── TOAST ── */
+.toast {
+  position:fixed; bottom:16px; left:50%;
+  transform:translateX(-50%) translateY(80px);
+  background:var(--s3); border:1px solid var(--g);
+  border-radius:10px; padding:9px 16px;
+  font-size:12px; font-weight:700; color:var(--g);
+  z-index:999; transition:transform 0.3s;
+  white-space:nowrap; max-width:90vw; text-align:center;
+}
+
+.toast.show { transform:translateX(-50%) translateY(0); }
+.toast.blue { border-color:var(--b); color:var(--b); }
+.toast.red { border-color:var(--r); color:var(--r); }
+
+/* scrollbar */
+::-webkit-scrollbar { width:3px; height:3px; }
+::-webkit-scrollbar-thumb { background:var(--b2); border-radius:2px; }
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- HEADER -->
+  <div class="hdr">
+    <div class="hdr-left">
+      <div class="logo-mark">⚡</div>
+      <div class="logo-txt">
+        BizBuilder
+        <small>Connected to Telegram</small>
+      </div>
+    </div>
+    <div class="conn-pill" id="connPill" onclick="openCfg()">
+      <div class="conn-dot" id="connDot"></div>
+      <span id="connLabel">Configure</span>
+    </div>
+  </div>
+
+  <!-- TABS -->
+  <div class="tabs">
+    <div class="tab active" id="tab-builder" onclick="switchTab('builder')">⚡ Builder</div>
+    <div class="tab" id="tab-library" onclick="switchTab('library')">💾 Library</div>
+    <div class="tab" id="tab-telegram" onclick="switchTab('telegram')">
+      📱 Telegram
+      <span class="badge" id="pendingBadge" style="display:none">0</span>
+    </div>
+  </div>
+
+  <!-- ══════════════ BUILDER PAGE ══════════════ -->
+  <div class="page active" id="page-builder">
+
+    <div class="input-zone">
+      <div class="iz-top">
+        <div class="iz-label">Describe your idea</div>
+        <div class="ai-indicator" id="aiLabel" onclick="openCfg()">⚡ GROQ</div>
+      </div>
+      <div class="input-row">
+        <textarea class="idea-box" id="ideaInput"
+          placeholder="e.g. A bot that finds Python jobs daily and sends proposals automatically..."
+          onkeydown="handleKey(event)" rows="2"></textarea>
+        <button class="send-btn" id="sendBtn" onclick="buildIdea()">→</button>
+      </div>
+    </div>
+
+    <div class="chips-row">
+      <div class="chips-label">⚡ Quick Ideas</div>
+      <div class="chips">
+        <div class="chip" onclick="qi('Telegram bot that scrapes Upwork Python jobs and sends top 5 daily')">Upwork Job Bot</div>
+        <div class="chip" onclick="qi('Instagram quote poster bot using AI to generate 3 posts daily')">Instagram Bot</div>
+        <div class="chip" onclick="qi('Amazon price tracker that alerts me when a product drops below my target price')">Price Tracker</div>
+        <div class="chip" onclick="qi('Crypto newsletter bot that writes and emails daily Bitcoin/ETH analysis')">Crypto Newsletter</div>
+        <div class="chip" onclick="qi('Lead generation bot that finds email addresses of small business owners')">Lead Gen Bot</div>
+        <div class="chip" onclick="qi('WhatsApp auto-reply bot that answers customer FAQs 24/7')">WhatsApp Bot</div>
+        <div class="chip" onclick="qi('YouTube niche channel bot that auto-creates top-10 list videos daily')">YouTube Bot</div>
+        <div class="chip" onclick="qi('Etsy digital product bot that creates and lists printable planners automatically')">Etsy Bot</div>
+      </div>
+    </div>
+
+    <div class="output" id="output">
+      <div class="empty" id="emptyState">
+        <div class="empty-icon">🤖</div>
+        <div class="empty-title">Build. Send. <span>Automate.</span></div>
+        <div class="empty-sub">Type any business idea → get working code → send it straight to your Telegram bot with one tap</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════ LIBRARY PAGE ══════════════ -->
+  <div class="page" id="page-library">
+    <div class="lib-toolbar">
+      <input class="lib-search" id="libSearch" placeholder="🔍 Search saved ideas..." oninput="renderLib()">
+    </div>
+    <div class="lib-list" id="libList"></div>
+  </div>
+
+  <!-- ══════════════ TELEGRAM PAGE ══════════════ -->
+  <div class="page" id="page-telegram">
+    <div class="tg-page">
+
+      <div class="tg-status-card" id="tgStatusCard">
+        <div class="tg-sc-icon">📱</div>
+        <div class="tg-sc-title">Telegram Control Panel</div>
+        <div class="tg-sc-sub" id="tgStatusText">Configure your bot token and chat ID to connect</div>
+      </div>
+
+      <!-- Quick send command -->
+      <div class="quick-send">
+        <div class="qs-label">📤 Send Command to Bot</div>
+        <input class="qs-input" id="qsInput" placeholder="/ask What are the best freelance niches right now?" />
+        <button class="qs-send" onclick="sendQuickCommand()">
+          ✈️ Send to Telegram Bot
+        </button>
+      </div>
+
+      <!-- Command reference -->
+      <div class="cmd-card">
+        <div class="cmd-card-title">🤖 Bot Commands — tap to send</div>
+        <div class="cmd-row" onclick="sendCmd('/start')">
+          <div class="cmd-name">/start</div>
+          <div class="cmd-desc">Open main menu with all buttons</div>
+          <div class="cmd-arrow">→</div>
+        </div>
+        <div class="cmd-row" onclick="sendCmd('/streams')">
+          <div class="cmd-name">/streams</div>
+          <div class="cmd-desc">View all income streams + status</div>
+          <div class="cmd-arrow">→</div>
+        </div>
+        <div class="cmd-row" onclick="sendCmd('/pending')">
+          <div class="cmd-name">/pending</div>
+          <div class="cmd-desc">Tasks waiting for your approval</div>
+          <div class="cmd-arrow">→</div>
+        </div>
+        <div class="cmd-row" onclick="sendCmd('/stats')">
+          <div class="cmd-name">/stats</div>
+          <div class="cmd-desc">Earnings and performance dashboard</div>
+          <div class="cmd-arrow">→</div>
+        </div>
+        <div class="cmd-row" onclick="sendCmd('/ai')">
+          <div class="cmd-name">/ai</div>
+          <div class="cmd-desc">Switch AI provider (Groq/Gemini/etc)</div>
+          <div class="cmd-arrow">→</div>
+        </div>
+        <div class="cmd-row" onclick="sendCmd('/run 1')">
+          <div class="cmd-name">/run 1</div>
+          <div class="cmd-desc">Manually trigger income stream #1</div>
+          <div class="cmd-arrow">→</div>
+        </div>
+        <div class="cmd-row" onclick="promptBuild()">
+          <div class="cmd-name">/build</div>
+          <div class="cmd-desc">Send a new idea directly to the bot</div>
+          <div class="cmd-arrow">→</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div><!-- end app -->
+
+<!-- CONFIG OVERLAY -->
+<div class="cfg-overlay" id="cfgOverlay" onclick="closeCfg()"></div>
+
+<div class="cfg-drawer" id="cfgDrawer">
+  <div class="cfg-handle"></div>
+  <div class="cfg-title">⚙️ Configuration</div>
+
+  <div class="cfg-section">
+    <span class="cfg-label">🧠 AI Provider</span>
+    <div class="ai-pills" id="aiPills">
+      <div class="ai-pill active" data-val="groq">🟢 Groq (FREE)</div>
+      <div class="ai-pill" data-val="gemini">🔵 Gemini (FREE)</div>
+      <div class="ai-pill" data-val="huggingface">🟠 HuggingFace (FREE)</div>
+      <div class="ai-pill" data-val="openrouter">🟡 OpenRouter</div>
+      <div class="ai-pill" data-val="claude">🟣 Claude</div>
+      <div class="ai-pill" data-val="ollama">⚫ Ollama</div>
+    </div>
+  </div>
+
+  <div class="cfg-section" id="aiKeySection">
+    <span class="cfg-label" id="aiKeyLabel">Groq API Key</span>
+    <input class="cfg-input" type="password" id="aiKeyInput" placeholder="gsk_xxxxxxxxxxxx" />
+    <div class="cfg-hint" id="aiKeyHint">Get free key at <a href="https://console.groq.com" target="_blank">console.groq.com</a> — no credit card</div>
+  </div>
+
+  <div class="cfg-section">
+    <span class="cfg-label">🤖 Telegram Bot Token</span>
+    <input class="cfg-input" type="password" id="tgToken" placeholder="123456789:ABCdefGHIjklmNOPqrst..." />
+    <div class="cfg-hint">From <a href="https://t.me/BotFather" target="_blank">@BotFather</a> on Telegram</div>
+  </div>
+
+  <div class="cfg-section">
+    <span class="cfg-label">💬 Your Chat ID</span>
+    <input class="cfg-input" id="tgChatId" placeholder="987654321" />
+    <div class="cfg-hint">Visit <a>api.telegram.org/bot{TOKEN}/getUpdates</a> after messaging your bot</div>
+  </div>
+
+  <button class="cfg-save" onclick="saveCfg()">💾 Save & Connect</button>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ══════════════════════════════════════
+// STATE
+// ══════════════════════════════════════
+let cfg = {
+  aiProvider: 'groq',
+  aiKey: '',
+  tgToken: '',
+  tgChatId: ''
+};
+
+let library = [];
+let pendingCount = 0;
+let lastCode = '';
+let lastIdeaText = '';
+
+// ══════════════════════════════════════
+// INIT
+// ══════════════════════════════════════
+window.onload = () => {
+  const saved = localStorage.getItem('biz_cfg');
+  if (saved) cfg = { ...cfg, ...JSON.parse(saved) };
+
+  const savedLib = localStorage.getItem('biz_library');
+  if (savedLib) library = JSON.parse(savedLib);
+
+  applyConfig();
+  renderLib();
+  updateConnectionStatus();
+};
+
+// ══════════════════════════════════════
+// CONFIG
+// ══════════════════════════════════════
+function openCfg() {
+  document.getElementById('cfgDrawer').classList.add('open');
+  document.getElementById('cfgOverlay').classList.add('open');
+  // Populate fields
+  document.getElementById('aiKeyInput').value = cfg.aiKey || '';
+  document.getElementById('tgToken').value = cfg.tgToken || '';
+  document.getElementById('tgChatId').value = cfg.tgChatId || '';
+  // Select active AI pill
+  document.querySelectorAll('.ai-pill').forEach(p => {
+    p.classList.toggle('active', p.dataset.val === cfg.aiProvider);
+  });
+  updateAiLabels();
+  // Pill click
+  document.querySelectorAll('.ai-pill').forEach(p => {
+    p.onclick = () => {
+      document.querySelectorAll('.ai-pill').forEach(x => x.classList.remove('active'));
+      p.classList.add('active');
+      cfg.aiProvider = p.dataset.val;
+      updateAiLabels();
+    };
+  });
+}
+
+function closeCfg() {
+  document.getElementById('cfgDrawer').classList.remove('open');
+  document.getElementById('cfgOverlay').classList.remove('open');
+}
+
+function updateAiLabels() {
+  const labels = {
+    groq: { label:'Groq API Key', hint:'Get free key: <a href="https://console.groq.com" target="_blank">console.groq.com</a>', placeholder:'gsk_xxxxxxxxxxxx' },
+    gemini: { label:'Gemini API Key', hint:'Get free key: <a href="https://aistudio.google.com" target="_blank">aistudio.google.com</a>', placeholder:'AIzaSyxxxxxxxxxx' },
+    huggingface: { label:'Hugging Face Token', hint:'Get free token: <a href="https://huggingface.co/settings/tokens" target="_blank">huggingface.co/settings/tokens</a>', placeholder:'hf_xxxxxxxxxxxx' },
+    openrouter: { label:'OpenRouter API Key', hint:'Get key: <a href="https://openrouter.ai" target="_blank">openrouter.ai</a> — free models available', placeholder:'sk-or-xxxxxxxxxxxx' },
+    claude: { label:'Anthropic API Key', hint:'Get key: <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a>', placeholder:'sk-ant-xxxxxxxxxxxx' },
+    ollama: { label:'Ollama Cloud URL', hint:'Your Ollama server URL (e.g. ngrok or HuggingFace Space)', placeholder:'https://xxxx.ngrok.io' }
+  };
+  const info = labels[cfg.aiProvider] || labels.groq;
+  document.getElementById('aiKeyLabel').textContent = info.label;
+  document.getElementById('aiKeyHint').innerHTML = info.hint;
+  document.getElementById('aiKeyInput').placeholder = info.placeholder;
+}
+
+function saveCfg() {
+  cfg.aiKey = document.getElementById('aiKeyInput').value.trim();
+  cfg.tgToken = document.getElementById('tgToken').value.trim();
+  cfg.tgChatId = document.getElementById('tgChatId').value.trim();
+  localStorage.setItem('biz_cfg', JSON.stringify(cfg));
+  applyConfig();
+  updateConnectionStatus();
+  closeCfg();
+  showToast('✅ Configuration saved!');
+}
+
+function applyConfig() {
+  const names = { groq:'GROQ', gemini:'GEMINI', huggingface:'HUGGINGFACE', openrouter:'OPENROUTER', claude:'CLAUDE', ollama:'OLLAMA' };
+  document.getElementById('aiLabel').textContent = `⚡ ${names[cfg.aiProvider] || 'AI'}`;
+}
+
+function updateConnectionStatus() {
+  const pill = document.getElementById('connPill');
+  const dot = document.getElementById('connDot');
+  const label = document.getElementById('connLabel');
+  const tgCard = document.getElementById('tgStatusCard');
+  const tgText = document.getElementById('tgStatusText');
+
+  const hasAI = !!cfg.aiKey;
+  const hasTG = !!(cfg.tgToken && cfg.tgChatId);
+
+  if (hasAI && hasTG) {
+    pill.className = 'conn-pill connected';
+    label.textContent = 'Connected';
+    tgCard.style.borderColor = 'rgba(0,255,179,0.3)';
+    tgText.textContent = `✅ Bot connected • AI: ${cfg.aiProvider.toUpperCase()} • Tap a command below to send`;
+  } else if (hasAI) {
+    pill.className = 'conn-pill';
+    label.textContent = 'AI only';
+    tgText.textContent = '⚠️ Add Telegram token + chat ID to enable bot control from this app';
+  } else {
+    pill.className = 'conn-pill';
+    label.textContent = 'Configure';
+    tgText.textContent = 'Tap the configure button above to add your API keys';
+  }
+}
+
+// ══════════════════════════════════════
+// TABS
+// ══════════════════════════════════════
+function switchTab(tab) {
+  ['builder','library','telegram'].forEach(t => {
+    document.getElementById(`tab-${t}`).classList.remove('active');
+    document.getElementById(`page-${t}`).classList.remove('active');
+  });
+  document.getElementById(`tab-${tab}`).classList.add('active');
+  document.getElementById(`page-${tab}`).classList.add('active');
+  if (tab === 'library') renderLib();
+}
+
+// ══════════════════════════════════════
+// QUICK IDEAS
+// ══════════════════════════════════════
+function qi(text) {
+  document.getElementById('ideaInput').value = text;
+  document.getElementById('ideaInput').focus();
+}
+
+function handleKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); buildIdea(); }
+}
+
+// ══════════════════════════════════════
+// AI CALL — MULTI-PROVIDER
+// ══════════════════════════════════════
+async function callAI(prompt, system) {
+  const p = cfg.aiProvider;
+  const key = cfg.aiKey;
+
+  if (!key) throw new Error('No API key configured. Tap Configure to add your key.');
+
+  if (p === 'groq') {
+    const r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'llama-3.3-70b-versatile',
+        max_tokens: 3000,
+        messages: [
+          { role: 'system', content: system },
+          { role: 'user', content: prompt }
+        ]
+      })
+    });
+    const d = await r.json();
+    if (d.error) throw new Error(d.error.message);
+    return d.choices[0].message.content;
+  }
+
+  if (p === 'gemini') {
+    const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: `${system}\n\n${prompt}` }] }],
+        generationConfig: { maxOutputTokens: 3000 }
+      })
+    });
+    const d = await r.json();
+    if (d.error) throw new Error(d.error.message);
+    return d.candidates[0].content.parts[0].text;
+  }
+
+  if (p === 'huggingface') {
+    const r = await fetch('https://api-inference.huggingface.co/models/meta-llama/Llama-3.2-3B-Instruct', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        inputs: `${system}\n\nUser: ${prompt}\nAssistant:`,
+        parameters: { max_new_tokens: 3000, temperature: 0.7, return_full_text: false }
+      })
+    });
+    const d = await r.json();
+    if (d.error) throw new Error(d.error);
+    if (Array.isArray(d) && d[0]) return d[0].generated_text || d[0].text || JSON.stringify(d);
+    if (d.generated_text) return d.generated_text;
+    return JSON.stringify(d);
+  }
+
+  if (p === 'openrouter') {
+    const r = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json', 'HTTP-Referer': 'https://bizbuilder.app' },
+      body: JSON.stringify({
+        model: 'meta-llama/llama-3.1-8b-instruct:free',
+        max_tokens: 3000,
+        messages: [{ role: 'system', content: system }, { role: 'user', content: prompt }]
+      })
+    });
+    const d = await r.json();
+    if (d.error) throw new Error(d.error.message || 'OpenRouter error');
+    return d.choices[0].message.content;
+  }
+
+  if (p === 'claude') {
+    const r = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01' },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 3000,
+        system: system,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+    const d = await r.json();
+    if (d.error) throw new Error(d.error.message);
+    return d.content[0].text;
+  }
+
+  if (p === 'ollama') {
+    const r = await fetch(`${key}/api/generate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model: 'llama3.2', prompt: `${system}\n\nUser: ${prompt}`, stream: false })
+    });
+    const d = await r.json();
+    return d.response;
+  }
+
+  throw new Error('Unknown AI provider');
+}
+
+// ══════════════════════════════════════
+// BUILD IDEA
+// ══════════════════════════════════════
+async function buildIdea() {
+  const idea = document.getElementById('ideaInput').value.trim();
+  if (!idea) { showToast('💡 Type your idea first'); return; }
+  if (!cfg.aiKey) { showToast('🔑 Add your API key first', 'blue'); openCfg(); return; }
+
+  lastIdeaText = idea;
+  const btn = document.getElementById('sendBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="sending">⟳</span>';
+
+  document.getElementById('emptyState')?.remove();
+  const out = document.getElementById('output');
+
+  // User bubble
+  const userEl = document.createElement('div');
+  userEl.className = 'msg msg-user';
+  userEl.innerHTML = `<div class="bub">${escHtml(idea)}</div>`;
+  out.appendChild(userEl);
+
+  // Thinking
+  const thinkEl = document.createElement('div');
+  thinkEl.className = 'msg msg-ai';
+  thinkEl.innerHTML = `
+    <div class="ai-tag"><div class="ai-dot"></div>BUILDING...</div>
+    <div class="r-card"><div class="r-card-body" style="display:flex;align-items:center;gap:10px;">
+      <span style="font-size:20px">⚙️</span>
+      <span style="color:var(--m2)">Generating automation code via ${cfg.aiProvider.toUpperCase()}...</span>
+    </div></div>`;
+  out.appendChild(thinkEl);
+  out.scrollTop = out.scrollHeight;
+
+  const system = `You are an expert Python automation developer. Generate business automation code.
+Return ONLY a valid JSON object with these exact keys:
+{
+  "overview": "2-3 sentence description",
+  "revenue": "realistic monthly $ range + timeframe to first earnings",
+  "code": "complete working Python script with Telegram notifications using os.getenv for API keys",
+  "packages": ["list", "of", "pip", "packages"],
+  "steps": ["step1", "step2", "step3", "step4", "step5"],
+  "telegram_cmd": "/add StreamName | Description of what this stream does"
+}
+The code MUST use os.getenv() for all API keys, include error handling, have a main() function, and send Telegram notifications using requests library. No markdown, no explanation outside JSON.`;
+
+  try {
+    const raw = await callAI(`Build automation for: ${idea}`, system);
+    thinkEl.remove();
+
+    let data;
+    try {
+      const clean = raw.replace(/^```json\n?/,'').replace(/\n?```$/,'').trim();
+      data = JSON.parse(clean);
+    } catch {
+      data = { overview: 'Automation ready!', revenue: 'Varies by execution', code: raw, packages: ['requests','schedule'], steps: ['Copy code to Replit','Add API keys as env vars','Test locally','Deploy to Railway','Monitor via Telegram'], telegram_cmd: `/add ${idea.substring(0,30)} | ${idea}` };
+    }
+
+    lastCode = data.code || '';
+    const codeId = 'code-' + Date.now();
+
+    const aiEl = document.createElement('div');
+    aiEl.className = 'msg msg-ai';
+    aiEl.innerHTML = `
+      <div class="ai-tag"><div class="ai-dot"></div>${cfg.aiProvider.toUpperCase()} · COMPLETE</div>
+
+      <div class="r-card">
+        <div class="r-card-head"><span style="color:var(--g)">📋 OVERVIEW</span></div>
+        <div class="r-card-body">${escHtml(data.overview || '')}</div>
+      </div>
+
+      <div class="r-card">
+        <div class="r-card-head"><span style="color:var(--y)">💰 REVENUE POTENTIAL</span></div>
+        <div class="r-card-body">${escHtml(data.revenue || '')}</div>
+      </div>
+
+      <div class="code-wrap">
+        <div class="code-head">
+          <div class="code-lang">🐍 PYTHON · AUTOMATION CODE</div>
+          <div class="code-acts">
+            <button class="cbtn" onclick="copyCode('${codeId}',this)">📋 Copy</button>
+          </div>
+        </div>
+        <div class="code-body"><pre id="${codeId}">${escHtml(data.code || '')}</pre></div>
+      </div>
+
+      <div class="r-card">
+        <div class="r-card-head"><span style="color:var(--b)">📦 PACKAGES · 🚀 DEPLOY STEPS</span></div>
+        <div class="r-card-body">
+          <strong>Install:</strong> ${(data.packages||[]).map(p=>`<em>${p}</em>`).join(', ')}<br><br>
+          ${(data.steps||[]).map((s,i)=>`<strong>${i+1}.</strong> ${escHtml(s)}`).join('<br>')}
+        </div>
+      </div>
+
+      ${cfg.tgToken && cfg.tgChatId ? `
+      <div class="tg-banner">
+        <div class="tg-banner-left">
+          <div class="tg-banner-title">📱 Send to Telegram Bot</div>
+          <div class="tg-banner-sub">Bot saves it as a new income stream instantly</div>
+        </div>
+        <button class="tg-send-btn" id="tgbtn-${codeId}" onclick="sendToTelegram('${codeId}','${escAttr(idea)}','${escAttr(data.revenue||'')}','${escAttr(data.telegram_cmd||'')}',this)">
+          ✈️ Send
+        </button>
+      </div>` : `
+      <div class="tg-banner" style="opacity:0.6;">
+        <div class="tg-banner-left">
+          <div class="tg-banner-title">📱 Send to Telegram Bot</div>
+          <div class="tg-banner-sub">Add your bot token in Configure to enable this</div>
+        </div>
+        <button class="tg-send-btn" onclick="openCfg()">⚙️ Setup</button>
+      </div>`}
+
+      <div style="display:flex;gap:8px;">
+        <button class="cbtn" style="flex:1;padding:9px;font-size:12px;" onclick="saveToLib('${escAttr(idea)}','${escAttr(data.code||'')}','${escAttr(data.revenue||'')}')">💾 Save to Library</button>
+      </div>
+    `;
+    out.appendChild(aiEl);
+
+  } catch(err) {
+    thinkEl.remove();
+    const errEl = document.createElement('div');
+    errEl.className = 'msg msg-ai';
+    errEl.innerHTML = `<div class="r-card"><div class="r-card-head" style="color:var(--r)">❌ ERROR</div><div class="r-card-body">${err.message.includes('401')||err.message.includes('auth') ? '🔑 Invalid API key. Check and try again.' : escHtml(err.message)}</div></div>`;
+    out.appendChild(errEl);
+    showToast('❌ ' + err.message.substring(0,50), 'red');
+  }
+
+  btn.disabled = false;
+  btn.textContent = '→';
+  document.getElementById('ideaInput').value = '';
+  out.scrollTop = out.scrollHeight;
+}
+
+// ══════════════════════════════════════
+// SEND TO TELEGRAM
+// ══════════════════════════════════════
+async function sendToTelegram(codeId, idea, revenue, tgCmd, btnEl) {
+  if (!cfg.tgToken || !cfg.tgChatId) { showToast('⚙️ Configure Telegram first', 'blue'); openCfg(); return; }
+
+  btnEl.disabled = true;
+  btnEl.textContent = '⏳ Sending...';
+  btnEl.classList.add('sending-tg');
+
+  const code = document.getElementById(codeId)?.textContent || '';
+  const shortCode = code.substring(0, 3500); // Telegram message limit
+
+  const msg =
+`🤖 *NEW INCOME STREAM ADDED*
+━━━━━━━━━━━━━━━━━━━━
+💡 *Idea:* ${idea}
+💰 *Revenue:* ${revenue}
+
+📋 *Add to your system:*
+\`${tgCmd}\`
+
+🐍 *Code Preview:*
+\`\`\`python
+${shortCode.substring(0, 800)}...
+\`\`\`
+
+✅ _Full code saved in your Builder app_
+_Reply /streams to see all your income streams_`;
+
+  try {
+    const r = await fetch(`https://api.telegram.org/bot${cfg.tgToken}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chat_id: cfg.tgChatId,
+        text: msg,
+        parse_mode: 'Markdown'
+      })
+    });
+
+    const d = await r.json();
+
+    if (d.ok) {
+      // Also send the /add command automatically
+      await fetch(`https://api.telegram.org/bot${cfg.tgToken}/sendMessage`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chat_id: cfg.tgChatId,
+          text: tgCmd || `/add ${idea.substring(0,40)} | Auto-added from Builder app`,
+          parse_mode: 'Markdown'
+        })
+      });
+
+      btnEl.textContent = '✅ Sent!';
+      btnEl.classList.remove('sending-tg');
+      btnEl.classList.add('sent-tg', 'done');
+      showToast('✅ Sent to Telegram! Check your bot.', 'green');
+
+      // Save to library with synced status
+      saveToLib(idea, code, revenue, true);
+    } else {
+      throw new Error(d.description || 'Telegram error');
+    }
+  } catch(err) {
+    btnEl.disabled = false;
+    btnEl.textContent = '✈️ Retry';
+    btnEl.classList.remove('sending-tg');
+    showToast('❌ ' + (err.message || 'Send failed'), 'red');
+  }
+}
+
+// ══════════════════════════════════════
+// LIBRARY
+// ══════════════════════════════════════
+function saveToLib(idea, code, revenue, synced = false) {
+  const exists = library.find(i => i.idea === idea);
+  if (exists) {
+    if (synced) exists.synced = true;
+    localStorage.setItem('biz_library', JSON.stringify(library));
+    return;
+  }
+  library.push({ id: Date.now(), idea, code, revenue, synced, date: new Date().toLocaleDateString() });
+  localStorage.setItem('biz_library', JSON.stringify(library));
+  if (!synced) showToast('💾 Saved to Library!');
+}
+
+function renderLib() {
+  const list = document.getElementById('libList');
+  const q = (document.getElementById('libSearch')?.value || '').toLowerCase();
+  let items = library;
+  if (q) items = items.filter(i => i.idea.toLowerCase().includes(q));
+
+  if (!items.length) {
+    list.innerHTML = `<div style="text-align:center;padding:40px 20px;color:var(--m2);">
+      <div style="font-size:40px;margin-bottom:12px;">💡</div>
+      <div style="font-size:15px;font-weight:700;margin-bottom:6px;">${q ? 'No results' : 'Library empty'}</div>
+      <div style="font-size:12px;">${q ? 'Try different search' : 'Build ideas in the Builder tab'}</div>
+    </div>`;
+    return;
+  }
+
+  list.innerHTML = items.map(item => `
+    <div class="lib-card">
+      <div class="lc-top">
+        <div class="lc-name">${escHtml(item.idea.substring(0,65))}${item.idea.length>65?'...':''}</div>
+        <span class="lc-badge ${item.synced ? 'badge-synced' : 'badge-local'}">${item.synced ? '📱 Synced' : '💾 Local'}</span>
+      </div>
+      <div class="lc-meta">💰 ${escHtml((item.revenue||'').substring(0,50))} · 📅 ${item.date}</div>
+      <div class="lc-actions">
+        <div class="la-btn" onclick="reloadIdea('${escAttr(item.idea)}')">⚡ Rebuild</div>
+        <div class="la-btn tg" onclick="sendLibItem(${item.id})">📱 Send to Bot</div>
+        <div class="la-btn" onclick="copyLibCode(${item.id})">📋 Code</div>
+        <div class="la-btn del" onclick="deleteLib(${item.id})">🗑</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function reloadIdea(idea) {
+  switchTab('builder');
+  document.getElementById('ideaInput').value = idea;
+}
+
+async function sendLibItem(id) {
+  const item = library.find(i => i.id === id);
+  if (!item) return;
+  if (!cfg.tgToken || !cfg.tgChatId) { showToast('⚙️ Configure Telegram first', 'blue'); openCfg(); return; }
+
+  const msg = `📱 *STREAM FROM LIBRARY*\n\n💡 *${item.idea}*\n💰 ${item.revenue||''}\n\n/add ${item.idea.substring(0,40)} | ${item.idea}`;
+
+  try {
+    const r = await fetch(`https://api.telegram.org/bot${cfg.tgToken}/sendMessage`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ chat_id: cfg.tgChatId, text: msg, parse_mode: 'Markdown' })
+    });
+    const d = await r.json();
+    if (d.ok) {
+      item.synced = true;
+      localStorage.setItem('biz_library', JSON.stringify(library));
+      renderLib();
+      showToast('✅ Sent to Telegram!');
+    } else throw new Error(d.description);
+  } catch(e) { showToast('❌ ' + e.message, 'red'); }
+}
+
+function copyLibCode(id) {
+  const item = library.find(i => i.id === id);
+  if (item?.code) navigator.clipboard.writeText(item.code).then(() => showToast('📋 Code copied!'));
+}
+
+function deleteLib(id) {
+  library = library.filter(i => i.id !== id);
+  localStorage.setItem('biz_library', JSON.stringify(library));
+  renderLib();
+  showToast('🗑 Deleted');
+}
+
+// ══════════════════════════════════════
+// TELEGRAM COMMANDS
+// ══════════════════════════════════════
+async function sendCmd(cmd) {
+  if (!cfg.tgToken || !cfg.tgChatId) { showToast('⚙️ Configure Telegram first', 'blue'); openCfg(); return; }
+  try {
+    const r = await fetch(`https://api.telegram.org/bot${cfg.tgToken}/sendMessage`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ chat_id: cfg.tgChatId, text: cmd })
+    });
+    const d = await r.json();
+    if (d.ok) showToast(`✅ "${cmd}" sent to bot!`);
+    else throw new Error(d.description);
+  } catch(e) { showToast('❌ ' + e.message, 'red'); }
+}
+
+async function sendQuickCommand() {
+  const input = document.getElementById('qsInput');
+  const cmd = input.value.trim();
+  if (!cmd) { showToast('Type a command first'); return; }
+  await sendCmd(cmd);
+  input.value = '';
+}
+
+function promptBuild() {
+  switchTab('builder');
+  document.getElementById('ideaInput').focus();
+  showToast('💡 Type your idea and tap →');
+}
+
+// ══════════════════════════════════════
+// UTILS
+// ══════════════════════════════════════
+function copyCode(id, btn) {
+  const code = document.getElementById(id)?.textContent || '';
+  navigator.clipboard.writeText(code).then(() => {
+    if (btn) { btn.textContent = '✅ Copied!'; btn.classList.add('copied'); setTimeout(()=>{ btn.textContent='📋 Copy'; btn.classList.remove('copied'); }, 2000); }
+  });
+}
+
+function showToast(msg, type = 'green') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = `toast ${type} show`;
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+function escHtml(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function escAttr(s) {
+  return String(s||'').replace(/'/g,"\\'").replace(/"/g,'\\"').replace(/\n/g,'\\n');
+}
+</script>
+</body>
+</html>
