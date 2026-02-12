@@ -1162,14 +1162,19 @@ async function sendToTelegram(codeId, idea, revenue, tgCmd, btnEl) {
   const code = document.getElementById(codeId)?.textContent || '';
   const shortCode = code.substring(0, 3500); // Telegram message limit
 
+  // Escape all user input for Markdown
+  const safeIdea = escapeMarkdown(idea);
+  const safeRevenue = escapeMarkdown(revenue);
+  const safeTgCmd = escapeMarkdown(tgCmd);
+
   const msg =
 `🤖 *NEW INCOME STREAM ADDED*
 ━━━━━━━━━━━━━━━━━━━━
-💡 *Idea:* ${idea}
-💰 *Revenue:* ${revenue}
+💡 *Idea:* ${safeIdea}
+💰 *Revenue:* ${safeRevenue}
 
 📋 *Add to your system:*
-\`${tgCmd}\`
+\`${safeTgCmd}\`
 
 🐍 *Code Preview:*
 \`\`\`python
@@ -1361,6 +1366,11 @@ function escHtml(s) {
 
 function escAttr(s) {
   return String(s||'').replace(/'/g,"\\'").replace(/"/g,'\\"').replace(/\n/g,'\\n');
+}
+
+// Escape Markdown special characters for Telegram
+function escapeMarkdown(text) {
+  return String(text||'').replace(/[_*[\]()~`>#+=|{}.!-]/g, '\\$&');
 }
 </script>
 </body>
